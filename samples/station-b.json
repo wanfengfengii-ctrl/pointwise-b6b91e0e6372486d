@@ -1,0 +1,9 @@
+{
+  "station_id": "B",
+  "recording_id": "B-day",
+  "calibration_id": "B-standard",
+  "offset": "0",
+  "rows": [
+    {"start":"3","end":"5","quality":"valid","calibration_id":"B-standard","raw_start":"5","raw_end":"5"}
+  ]
+}
