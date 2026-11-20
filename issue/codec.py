@@ -5,6 +5,7 @@ from exact import required_text
 
 
 V1_ENVELOPE_VERSION = 1
+V2_ENVELOPE_VERSION = 2
 _FIELDS = {'version', 'station_id', 'revision_id', 'piece_id', 'body'}
 
 
@@ -37,10 +38,10 @@ def _reject_constant(value: str) -> None:
     raise ValueError(f'invalid JSON number: {value}')
 
 
-def encode_piece(piece: StationPiece) -> bytes:
+def _encode_envelope(piece: StationPiece, version: int) -> bytes:
     _validate_piece(piece)
     return json.dumps({
-        'version': V1_ENVELOPE_VERSION,
+        'version': version,
         'station_id': piece.station_id,
         'revision_id': piece.revision_id,
         'piece_id': piece.piece_id,
@@ -48,7 +49,15 @@ def encode_piece(piece: StationPiece) -> bytes:
     }, sort_keys=True, separators=(',', ':'), allow_nan=False).encode('utf-8')
 
 
-def decode_piece(data: bytes) -> StationPiece:
+def encode_piece(piece: StationPiece) -> bytes:
+    return _encode_envelope(piece, V1_ENVELOPE_VERSION)
+
+
+def encode_stop_piece(piece: StationPiece) -> bytes:
+    return _encode_envelope(piece, V2_ENVELOPE_VERSION)
+
+
+def _decode_envelope(data: bytes, version: int) -> StationPiece:
     if not isinstance(data, bytes):
         raise ValueError('station piece must be UTF-8 JSON bytes')
     try:
@@ -57,9 +66,17 @@ def decode_piece(data: bytes) -> StationPiece:
         raise ValueError('invalid station piece JSON') from error
     if not isinstance(envelope, dict) or envelope.keys() != _FIELDS:
         raise ValueError('incomplete or invalid station piece envelope')
-    version = envelope['version']
-    if type(version) is not int or version != V1_ENVELOPE_VERSION:
+    envelope_version = envelope['version']
+    if type(envelope_version) is not int or envelope_version != version:
         raise ValueError('unsupported station piece version')
     piece = StationPiece(envelope['station_id'], envelope['revision_id'], envelope['piece_id'], envelope['body'])
     _validate_piece(piece)
     return piece
+
+
+def decode_piece(data: bytes) -> StationPiece:
+    return _decode_envelope(data, V1_ENVELOPE_VERSION)
+
+
+def decode_stop_piece(data: bytes) -> StationPiece:
+    return _decode_envelope(data, V2_ENVELOPE_VERSION)

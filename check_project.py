@@ -2,6 +2,8 @@
 import sys
 import unittest
 
+import stop_examples
+
 
 def main():
     suite = unittest.defaultTestLoader.discover('tests', top_level_dir='.')
@@ -23,7 +25,18 @@ def main():
           f'expected_failures={len(result.expectedFailures)} '
           f'unexpected_successes={len(result.unexpectedSuccesses)} '
           f'result={"PASS" if successful else "FAIL"}')
-    return 0 if successful else 1
+    examples = _run_stop_examples()
+    return 0 if successful and examples else 1
+
+
+def _run_stop_examples() -> bool:
+    try:
+        stop_examples.main()
+    except Exception as error:
+        print(f'STOP EXAMPLES result=FAIL {error!r}')
+        return False
+    print('STOP EXAMPLES result=PASS')
+    return True
 
 
 if __name__ == '__main__':
